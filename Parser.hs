@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Parsers (parseExpress) where 
+module Parser (parseExpress) where 
 
-import Types
+import Types ( Express(..), Atom(..) )
 
 import Text.ParserCombinators.ReadP
     ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S)

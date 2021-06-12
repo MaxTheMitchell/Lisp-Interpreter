@@ -6,6 +6,7 @@ data Atom
     = Ident String 
     | Operator Char
     | Value Int 
+    | Error 
     deriving Show
 
 data Express 
