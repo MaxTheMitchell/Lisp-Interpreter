@@ -38,7 +38,7 @@ expressParser =
 atomParser :: ReadP Atom 
 atomParser = Ident <$> identParser <|> valueParser <|> operatorParser
     where
-        operatorParser = Operator <$> satisfy (`elem` "+-*/")
+        operatorParser = (\c -> Ident (c:""))  <$> satisfy (`elem` "+-*/")
         valueParser = Value . read <$> munch1 isDigit 
 
 identParser :: ReadP Ident

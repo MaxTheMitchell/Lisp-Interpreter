@@ -22,13 +22,11 @@ data Express
 
 data Atom 
     = Ident Ident
-    | Operator Char
     | Value Int 
     | Error Error
 
 instance Show Atom where 
     show (Ident i) = "No definition of function: " ++ i 
-    show (Operator _) = show OperatorError
     show (Value v) = show v
     show (Error e) = show e 
 
@@ -40,6 +38,7 @@ data Error
     | InvalidArguments Int 
     | ValueError
     | UnboundVariable
+    | UnknownError 
     | Debug String
 
 instance Show Error where 
@@ -53,4 +52,5 @@ instance Show Error where
             else " too few arguments"  
     show UnboundVariable = "Unbound Variable"
     show ValueError = "Value Error"
+    show UnknownError = "Unknown Error"
     show (Debug str) = "Debug: " ++ str 
