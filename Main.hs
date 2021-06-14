@@ -1,25 +1,13 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Main where 
 
-import Parser (parseExpress)
-import Interpreter ( interpretExpress )
-import Types ( Atom(..), errorMessage ) 
+import Interpreter ( interpretProgram )
 
 import System.Environment
-
-runProgram :: String -> String 
-runProgram = 
-    (\case 
-        Value v -> show v ++ "\n"
-        Error err -> errorMessage err ++ "\n"
-        _ -> "There is an error in your program\n")
-    . interpretExpress
-    . parseExpress
 
 main :: IO ()
 main = 
     getArgs >>= 
     mapM readFile >>= 
-    putStr . concatMap runProgram  
+    foldl (\acc new -> interpretProgram new >> acc ) (return ())

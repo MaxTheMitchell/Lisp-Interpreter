@@ -1,32 +1,44 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Parser (parseExpress) where 
+module Parser  where 
 
-import Types ( Express(..), Atom(..), Error(..) )
+import Types 
 
 import Text.ParserCombinators.ReadP
-    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S)
+    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, string, eof)
 import Data.Char ( isDigit, isAlpha, isAlphaNum )
 import Control.Applicative ((<|>), Alternative (many))
 
-valueParser :: ReadP Atom 
-valueParser = Value . read <$> munch1 isDigit 
 
-identParser :: ReadP Atom
-identParser = (\c str -> Ident (c:str)) <$> satisfy isAlpha <*> munch isAlphaNum
+parseProgram :: String -> Maybe Program 
+parseProgram str = case readP_to_S programParser str of
+    [(program,"")] -> Just program
+    _ -> Nothing
 
-operatorParser :: ReadP Atom 
-operatorParser = Operator <$> satisfy (`elem` "+-*/")
+programParser :: ReadP Program 
+programParser = many actionParser <* skipSpaces <* eof
 
-atomParser :: ReadP Atom 
-atomParser = valueParser <|> identParser <|> operatorParser
+actionParser :: ReadP Action  
+actionParser = 
+    let 
+        printParser = Display <$> wrapInParenthesis (string "display" *> expressParser)
+        -- defParser = 
+        --     Definition <$> wrapInParenthesis (string "define" *> )
+    in
+        skipSpaces *> printParser
 
 expressParser :: ReadP Express 
 expressParser =
-    A <$> (skipSpaces *> atomParser) <|> skipSpaces *> char '(' *> (Comb <$> many expressParser) <* skipSpaces <* char ')'
+    skipSpaces *> (A <$> atomParser <|> wrapInParenthesis (Comb <$> many expressParser))
 
-parseExpress :: String -> Express
-parseExpress str =  
-    case readP_to_S expressParser str of
-        [(ex, _)] -> ex
-        _ -> A $ Error SyntaxError  
+atomParser :: ReadP Atom 
+atomParser = Ident <$> identParser <|> valueParser <|> operatorParser
+    where
+        operatorParser = Operator <$> satisfy (`elem` "+-*/")
+        valueParser = Value . read <$> munch1 isDigit 
+
+identParser :: ReadP Ident
+identParser = (:) <$> (skipSpaces *> satisfy isAlpha) <*> munch isAlphaNum
+
+wrapInParenthesis :: ReadP a -> ReadP a 
+wrapInParenthesis parser = skipSpaces *> char '(' *> skipSpaces *> parser <* skipSpaces <* char ')'

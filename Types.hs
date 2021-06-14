@@ -2,17 +2,26 @@
 
 module Types where 
 
-data Atom 
-    = Ident String 
-    | Operator Char
-    | Value Int 
-    | Error Error
+type Program = [Action]
+
+data Action 
+    = Display Express
+    | Definition String [String] Express 
     deriving Show
 
 data Express 
     = A Atom 
     | Comb [Express]
     deriving Show
+
+data Atom 
+    = Ident Ident
+    | Operator Char
+    | Value Int 
+    | Error Error
+    deriving Show
+
+type Ident = String
 
 data Error 
     = SyntaxError
