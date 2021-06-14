@@ -8,12 +8,7 @@ type GlobalFuncs = Map Ident Lambda
 
 type Lambda = ([Ident], Express)
 
-type Program = [Action]
-
-data Action 
-    = Display Express
-    | Definition Ident [Ident] Express 
-    deriving Show
+type Program = [Express]
 
 data Express 
     = A Atom 

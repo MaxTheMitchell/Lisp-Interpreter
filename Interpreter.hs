@@ -4,6 +4,13 @@
 module Interpreter (interpretProgram) where 
 
 import Types
+    ( Error(ValueError, UnknownError, InvalidArguments,
+            UnboundVariable),
+      Ident,
+      Atom(..),
+      Express(..),
+      Program,
+      GlobalFuncs )
 import Parser (parseProgram)
 import Data.Map (empty, insert, (!?))
 
@@ -16,27 +23,21 @@ interpretProgram input =
 runProgram :: GlobalFuncs -> Program -> IO ()
 runProgram _ [] =  return ()
 runProgram funcs (a:as) = 
-    completeAction funcs a >>= 
-        \newFuncs -> runProgram newFuncs as  
+    interpretExpress funcs a >>= 
+        \(newFuncs, _) -> runProgram newFuncs as  
 
-completeAction :: GlobalFuncs -> Action -> IO GlobalFuncs 
-completeAction gf (Display ex) = 
-    putStr ((++ "\n") . show $ interpretExpress gf ex) >> return gf 
-completeAction gf (Definition funcName perameters body) =
-    return $ insert funcName (perameters, body) gf 
-
-interpretExpress :: GlobalFuncs -> Express -> Atom  
+interpretExpress :: GlobalFuncs -> Express -> IO (GlobalFuncs, Atom)  
 interpretExpress gf (Comb (A(Ident funcName):args)) = callFunction gf funcName args
 interpretExpress gf (Comb [ex]) = interpretExpress gf ex 
-interpretExpress _ (A (Value v)) = Value v 
+interpretExpress gf (A (Value v)) = return (gf, Value v) 
 interpretExpress gf (A (Ident funcName)) = callFunction gf funcName []    
-interpretExpress _ (A(Error err)) = Error err 
-interpretExpress _ _ = Error UnknownError  
+interpretExpress gf (A(Error err)) = return (gf, Error err) 
+interpretExpress gf _ = return (gf, Error UnknownError)
 
-callFunction :: GlobalFuncs -> Ident -> [Express] -> Atom 
+callFunction :: GlobalFuncs -> Ident -> [Express] -> IO (GlobalFuncs, Atom) 
 callFunction funcs funcName args = 
     case funcs !? funcName of 
-        Nothing -> preDefinedFuncs funcName (map (interpretExpress funcs) args) 
+        Nothing -> preDefinedFuncs funcs funcName args
         Just (perameters, express) ->
             interpretExpress funcs $ bindArguments perameters args express  
 
@@ -56,21 +57,38 @@ bindArgument param arg (Comb es) = Comb $ map (bindArgument param arg) es
 initFuncs :: GlobalFuncs 
 initFuncs = empty 
 
-preDefinedFuncs :: Ident -> [Atom] -> Atom   
-preDefinedFuncs ident [a1, a2] =
-    (\case 
-        Nothing -> Error UnboundVariable 
-        Just f -> applyTwoArgFuncToAtom f a1 a2)
-    $ case ident of  
-        "+" -> Just (+)
-        "-" -> Just (-)
-        "*" -> Just (*)
-        "/" -> Just div
-        _ -> Nothing  
-preDefinedFuncs _ _ = Error UnboundVariable
+preDefinedFuncs :: GlobalFuncs -> Ident -> [Express] -> IO (GlobalFuncs, Atom)
+preDefinedFuncs gf "display" [ex] =
+    interpretExpress gf ex >>= \(newGf, atom) -> 
+    putStr (show atom ++ "\n") >> return (newGf, atom) 
+preDefinedFuncs gf "define" [perameters, body] =
+    case expressToIdents perameters of 
+        Just (funcName:parameterNames) ->
+             return (insert funcName (parameterNames, body) gf, Error ValueError) 
+        _ -> return (gf, Error UnknownError) 
+preDefinedFuncs gf ident [ex1, ex2] =
+        (\case 
+            Nothing -> return (gf, Error UnboundVariable)
+            Just f -> 
+                interpretExpress gf ex1 >>= \(_, a1) -> 
+                interpretExpress gf ex2 >>= \(_,a2) -> 
+                return (gf, applyTwoArgFuncToAtom f a1 a2) 
+        ) $ case ident of  
+            "+" -> Just (+)
+            "-" -> Just (-)
+            "*" -> Just (*)
+            "/" -> Just div
+            _ -> Nothing
+preDefinedFuncs gf _ _ = return (gf, Error UnboundVariable)
      
-applyTwoArgFuncToAtom ::  (Int -> Int -> Int) -> Atom -> Atom -> Atom 
+applyTwoArgFuncToAtom ::  (Int -> Int -> Int) -> Atom -> Atom -> Atom
 applyTwoArgFuncToAtom _ (Error e) _ = Error e
 applyTwoArgFuncToAtom _ _ (Error e) = Error e
 applyTwoArgFuncToAtom f (Value v1) (Value v2) = Value $ f v1 v2
 applyTwoArgFuncToAtom _ _ _ = Error ValueError 
+
+expressToIdents :: Express -> Maybe [Ident] --Clean me up
+expressToIdents (Comb []) = Just []
+expressToIdents (Comb ((A (Ident i) ):lst)) = (:) i <$> expressToIdents (Comb lst) 
+expressToIdents (A (Ident i)) = Just [i]
+expressToIdents _ = Nothing 

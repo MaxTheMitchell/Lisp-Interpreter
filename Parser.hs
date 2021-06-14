@@ -16,20 +16,7 @@ parseProgram str = case readP_to_S programParser str of
     _ -> Nothing
 
 programParser :: ReadP Program 
-programParser = many actionParser <* skipSpaces <* eof
-
-actionParser :: ReadP Action  
-actionParser = 
-    let 
-        printParser =
-             Display <$> wrapInParenthesis (string "display" *> expressParser)
-        defParser = 
-            wrapInParenthesis
-                (string "define" *> 
-                wrapInParenthesis (Definition <$>  identParser <*> many identParser) 
-                <*> expressParser)
-    in
-        skipSpaces *> (printParser <|> defParser)
+programParser = many expressParser <* skipSpaces <* eof
 
 expressParser :: ReadP Express 
 expressParser =

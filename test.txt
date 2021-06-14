@@ -2,4 +2,4 @@
 
 (define (quadruple x) (double (double x) ) )
 
-(display (pothag 5 2))
+(display (quadruple 5))
