@@ -2,11 +2,17 @@
 
 module Types where 
 
+import Data.Map (Map)
+
+type GlobalFuncs = Map Ident Lambda
+
+type Lambda = ([Ident], Express)
+
 type Program = [Action]
 
 data Action 
     = Display Express
-    | Definition String [String] Express 
+    | Definition Ident [Ident] Express 
     deriving Show
 
 data Express 
@@ -31,9 +37,11 @@ type Ident = String
 data Error 
     = SyntaxError
     | OperatorError
-    | InvalidArguments 
+    | InvalidArguments
+    | UnboundVariable
 
 instance Show Error where 
     show SyntaxError = "Syntax Error"
     show OperatorError = "Operator Error"
     show InvalidArguments = "Invalid Arguments" 
+    show UnboundVariable = "Unbound Variable"

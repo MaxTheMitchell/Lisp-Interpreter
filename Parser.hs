@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Parser  where 
+module Parser where 
 
 import Types 
 
@@ -21,11 +21,15 @@ programParser = many actionParser <* skipSpaces <* eof
 actionParser :: ReadP Action  
 actionParser = 
     let 
-        printParser = Display <$> wrapInParenthesis (string "display" *> expressParser)
-        -- defParser = 
-        --     Definition <$> wrapInParenthesis (string "define" *> )
+        printParser =
+             Display <$> wrapInParenthesis (string "display" *> expressParser)
+        defParser = 
+            wrapInParenthesis
+                (string "define" *> 
+                wrapInParenthesis (Definition <$>  identParser <*> many identParser) 
+                <*> expressParser)
     in
-        skipSpaces *> printParser
+        skipSpaces *> (printParser <|> defParser)
 
 expressParser :: ReadP Express 
 expressParser =

@@ -1,1 +1,5 @@
-(+ (* 5 (- 3 1)) (/ 4 2))\
+(define (double x) (* 2 x) )
+
+(define (quadruple y) (double (double y) ) )
+
+(display (quadruple 10))
