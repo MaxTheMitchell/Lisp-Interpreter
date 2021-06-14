@@ -37,11 +37,20 @@ type Ident = String
 data Error 
     = SyntaxError
     | OperatorError
-    | InvalidArguments
+    | InvalidArguments Int 
+    | ValueError
     | UnboundVariable
+    | Debug String
 
 instance Show Error where 
     show SyntaxError = "Syntax Error"
     show OperatorError = "Operator Error"
-    show InvalidArguments = "Invalid Arguments" 
+    show (InvalidArguments args) = 
+        "Invalid Arguments: " 
+        ++ show (abs args) 
+        ++ if args > 0 
+            then " too many arguments"
+            else " too few arguments"  
     show UnboundVariable = "Unbound Variable"
+    show ValueError = "Value Error"
+    show (Debug str) = "Debug: " ++ str 

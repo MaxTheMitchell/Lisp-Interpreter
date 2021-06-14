@@ -1,5 +1,5 @@
 (define (double x) (* 2 x) )
 
-(define (quadruple y) (double (double y) ) )
+(define (quadruple x) (double (double x) ) )
 
-(display (quadruple 10))
+(display (quadruple 5))
