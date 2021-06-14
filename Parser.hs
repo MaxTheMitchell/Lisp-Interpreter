@@ -2,7 +2,7 @@
 
 module Parser (parseExpress) where 
 
-import Types ( Express(..), Atom(..) )
+import Types ( Express(..), Atom(..), Error(..) )
 
 import Text.ParserCombinators.ReadP
     ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S)
@@ -26,4 +26,7 @@ expressParser =
     A <$> (skipSpaces *> atomParser) <|> skipSpaces *> char '(' *> (Comb <$> many expressParser) <* skipSpaces <* char ')'
 
 parseExpress :: String -> Express
-parseExpress = fst . head . readP_to_S expressParser 
+parseExpress str =  
+    case readP_to_S expressParser str of
+        [(ex, _)] -> ex
+        _ -> A $ Error SyntaxError  

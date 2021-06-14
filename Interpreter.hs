@@ -7,7 +7,7 @@ import Types
 interpretExpress :: Express -> Atom  
 interpretExpress (A a) = a
 interpretExpress (Comb (A(Operator op):args)) = applyOperation op args
-interpretExpress _ = Error 
+interpretExpress _ = Error SyntaxError
 
 applyOperation :: Char -> [Express] -> Atom 
 applyOperation op [ex1,ex2] =
@@ -21,8 +21,8 @@ applyOperation op [ex1,ex2] =
             )
         (interpretExpress ex1)
         (interpretExpress ex2)
-applyOperation _ _ = Error 
+applyOperation _ _ = Error OperatorError
 
 applyOpToAtoms :: (Int -> Int -> Int) -> Atom -> Atom -> Atom 
 applyOpToAtoms f (Value v1) (Value v2) = Value $ f v1 v2
-applyOpToAtoms _ _ _ = Error     
+applyOpToAtoms _ _ _ = Error InvalidArguments
