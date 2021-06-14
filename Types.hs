@@ -19,7 +19,12 @@ data Atom
     | Operator Char
     | Value Int 
     | Error Error
-    deriving Show
+
+instance Show Atom where 
+    show (Ident i) = "No definition of function: " ++ i 
+    show (Operator _) = show OperatorError
+    show (Value v) = show v
+    show (Error e) = show e 
 
 type Ident = String
 
@@ -27,9 +32,8 @@ data Error
     = SyntaxError
     | OperatorError
     | InvalidArguments 
-    deriving Show
 
-errorMessage :: Error -> String
-errorMessage SyntaxError = "Syntax Error"
-errorMessage OperatorError = "Operator Error"
-errorMessage InvalidArguments = "Invalid Arguments" 
+instance Show Error where 
+    show SyntaxError = "Syntax Error"
+    show OperatorError = "Operator Error"
+    show InvalidArguments = "Invalid Arguments" 
