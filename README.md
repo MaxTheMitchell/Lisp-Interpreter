@@ -9,8 +9,8 @@ An interpreter for a lisp like language written in Haskell.
 - [x] first class functions  
 - [x] conditions 
 - [x] arithmetic
-- [X] int and bool types
+- [x] int and bool types
+- [x] comments
 - [ ] float, char and string types 
-- [ ] comments
 - [ ] lists
 - [ ] More IO
