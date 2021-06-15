@@ -4,6 +4,8 @@ module Types where
 
 import Data.Map (Map)
 
+type State = (GlobalFuncs, Atom)
+
 type GlobalFuncs = Map Ident Lambda
 
 type Lambda = ([Ident], Express)

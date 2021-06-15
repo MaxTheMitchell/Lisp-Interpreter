@@ -5,7 +5,7 @@ module Parser where
 import Types 
 
 import Text.ParserCombinators.ReadP
-    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, string, eof)
+    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, eof)
 import Data.Char ( isDigit, isAlpha, isAlphaNum )
 import Control.Applicative ((<|>), Alternative (many))
 
