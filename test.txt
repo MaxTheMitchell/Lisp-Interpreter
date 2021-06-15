@@ -1,4 +1,4 @@
-;test file 
+;test file
 (define 
     (fib i)
     (if (< i 2)
@@ -10,4 +10,4 @@
 
 ;(display 2)
 
-(display (fib 8))
+(display (fib (+ 7 3)))

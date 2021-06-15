@@ -38,8 +38,7 @@ instance Show Value where
     show (Bool b) = show b
 
 data Error 
-    = SyntaxError
-    | OperatorError
+    = OperatorError
     | InvalidArguments Int 
     | ValueError
     | UnboundVariable String
@@ -47,7 +46,6 @@ data Error
     | Debug String
 
 instance Show Error where 
-    show SyntaxError = "Syntax Error"
     show OperatorError = "Operator Error"
     show (InvalidArguments args) = 
         "Invalid Arguments: " 

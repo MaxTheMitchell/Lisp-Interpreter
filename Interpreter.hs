@@ -4,8 +4,10 @@
 module Interpreter (interpretProgram, interpretExpress) where 
 
 import Types
+import AtomOperators (applyAtomOperator)
 import Parser (parseProgram)
 import Data.Map (empty, (!?), insert)
+
 
 interpretProgram :: String -> IO () 
 interpretProgram input = 
@@ -79,64 +81,13 @@ ifConditional gf condtion ifCase elseCase =
         _ -> return (gf, Error ValueError) 
 
 applyOperator :: GlobalFuncs -> Ident -> Express -> Express -> IO State 
-applyOperator gf ident ex1 ex2 = 
-    (\case 
-        Nothing -> return (gf, Error $ UnboundVariable ident)
-        Just f -> 
-            interpretExpress gf ex1 >>= \(_, a1) -> 
-            interpretExpress gf ex2 >>= \(_,a2) -> 
-            return (gf, f a1 a2) 
-    ) $ twoArgFunc ident 
-
-twoArgFunc :: Ident -> Maybe (Atom -> Atom -> Atom)
-twoArgFunc ident = 
-    foldl (\acc new -> 
-        case acc of 
-            Nothing -> new ident
-            Just _ -> acc     
-        ) Nothing [intFuncs, boolFuncs]
-
-intFuncs :: Ident -> Maybe (Atom -> Atom -> Atom)
-intFuncs ident = 
-    wrapAdamIntFunc <$>
-        case ident of 
-            "+" -> Just (+)
-            "-" -> Just (-)
-            "*" -> Just (*)
-            "/" -> Just div
-            _ -> Nothing 
-
-boolFuncs :: Ident -> Maybe (Atom -> Atom -> Atom)
-boolFuncs ident =
-    wrapAdamBoolFunc <$> 
-        case ident of 
-            ">" -> Just (>)
-            "<" -> Just (<)
-            "=" -> Just (==)
-            ">=" -> Just (>=)
-            "<=" -> Just (<=)
-            "/=" -> Just (/=)
-            _ -> Nothing 
-
-wrapAdamIntFunc :: (Int -> Int -> Int) -> (Atom -> Atom -> Atom)
-wrapAdamIntFunc f a1 a2 = case (a1, a2) of 
-    (Value (Int i1),Value (Int i2)) -> Value . Int $ f i1 i2
-    _ -> carryOverError ValueError [a1, a2] 
-
-wrapAdamBoolFunc :: (Int  -> Int -> Bool) -> (Atom -> Atom -> Atom)
-wrapAdamBoolFunc f a1 a2 = case (a1, a2) of 
-    (Value (Int b1),Value (Int b2)) -> Value . Bool $ f b1 b2
-    _ -> carryOverError ValueError [a1, a2] 
+applyOperator gf1 ident ex1 ex2 = 
+    interpretExpress gf1 ex1 >>= \(gf2, a1) -> 
+    interpretExpress gf2 ex2 >>= \(gf3, a2) ->
+        return (gf3, applyAtomOperator ident a1 a2)
 
 expressToIdents :: Express -> Maybe [Ident]
 expressToIdents (Comb exs) = 
     foldl (\acc ex -> (++) <$> acc <*> expressToIdents ex) (Just []) exs
 expressToIdents (A (Ident i)) = Just [i]
 expressToIdents _ = Nothing 
-
-carryOverError :: Error -> [Atom] -> Atom 
-carryOverError fallback = 
-    Error 
-    . foldl (\acc new -> case new of 
-        Error e -> e
-        _ -> acc) fallback
