@@ -1,16 +1,10 @@
-(define (double x) (* 2 x) )
+(define 
+    (fib i)
+    (if (< i 2)
+        i
+        (+ 
+            (fib (- i 1))
+            (fib (- i 2))
+)))
 
-(define (quadruple x) (double (double x) ) )
-
-(define (add x y) (+ x y))
-
-(define foo 7)
-
-(display 
-    (quadruple 
-        (display 
-            (quadruple 
-                foo
-))))
-
-(display (add 2 3) )
+(display (fib 8))

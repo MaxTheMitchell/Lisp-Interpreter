@@ -5,7 +5,7 @@ module Parser where
 import Types 
 
 import Text.ParserCombinators.ReadP
-    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, eof)
+    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, eof, string)
 import Data.Char ( isDigit, isAlpha, isAlphaNum )
 import Control.Applicative ((<|>), Alternative (many))
 
@@ -23,10 +23,16 @@ expressParser =
     skipSpaces *> (A <$> atomParser <|> wrapInParenthesis (Comb <$> many expressParser))
 
 atomParser :: ReadP Atom 
-atomParser = Ident <$> identParser <|> valueParser <|> operatorParser
+atomParser = Ident <$> identParser <|> Value <$> valueParser <|> operatorParser
     where
-        operatorParser = (\c -> Ident (c:""))  <$> satisfy (`elem` "+-*/")
-        valueParser = Value . read <$> munch1 isDigit 
+        operatorParser = (\c -> Ident [c]) <$> satisfy (`elem` "+-*/<>=")
+            <|> Ident <$> ((string "/=" <|> string ">=") <|> string "<=")
+
+valueParser :: ReadP Value 
+valueParser = intParser <|> boolParser
+    where 
+        intParser = Int . read <$> munch1 isDigit
+        boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident
 identParser = (:) <$> (skipSpaces *> satisfy isAlpha) <*> munch isAlphaNum

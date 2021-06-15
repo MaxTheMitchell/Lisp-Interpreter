@@ -19,22 +19,30 @@ data Express
 
 data Atom 
     = Ident Ident
-    | Value Int 
+    | Value Value 
     | Error Error
 
 instance Show Atom where 
-    show (Ident i) = "No definition of function: " ++ i 
+    show (Ident i) = i 
     show (Value v) = show v
     show (Error e) = show e 
 
 type Ident = String
+
+data Value 
+    = Int Int 
+    | Bool Bool
+
+instance Show Value where
+    show (Int i) = show i
+    show (Bool b) = show b
 
 data Error 
     = SyntaxError
     | OperatorError
     | InvalidArguments Int 
     | ValueError
-    | UnboundVariable
+    | UnboundVariable String
     | UnknownError 
     | Debug String
 
@@ -47,7 +55,7 @@ instance Show Error where
         ++ if args > 0 
             then " too many arguments"
             else " too few arguments"  
-    show UnboundVariable = "Unbound Variable"
+    show (UnboundVariable str) = "Unbound Variable: " ++ str 
     show ValueError = "Value Error"
     show UnknownError = "Unknown Error"
     show (Debug str) = "Debug: " ++ str 
