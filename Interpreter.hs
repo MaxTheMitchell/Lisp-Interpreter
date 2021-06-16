@@ -119,24 +119,22 @@ car gf ex =
         _ -> return (gf, Error ValueError)  
 
 cdr :: GlobalFuncs -> Express -> IO State 
-cdr gf ex = 
-    interpretExpress gf ex >>= 
-    \case
-        (newGf, Value (List (_:t))) -> return (newGf, Value $ List t)
-        _ -> return (gf, Error ValueError)  
-
+cdr = 
+    tryApplyListFunc (\case 
+        (_:ex) -> Value $ List ex
+        _ -> Error ValueError)
+        
 isNull :: GlobalFuncs -> Express  -> IO State 
-isNull gf ex = 
+isNull = tryApplyListFunc (Value . Bool . null)
+    
+cons :: GlobalFuncs -> Express -> Express -> IO State 
+cons gf ex = tryApplyListFunc (Value . List . (:) ex) gf 
+
+tryApplyListFunc :: ([Express] -> Atom) -> GlobalFuncs -> Express -> IO State 
+tryApplyListFunc f gf ex = 
     interpretExpress gf ex >>= 
     \case
-        (newGf, Value (List lst)) -> return (newGf, Value . Bool $ null lst )
-        _ -> return (gf, Error ValueError)  
-
-cons :: GlobalFuncs -> Express -> Express -> IO State 
-cons gf ex listEx = 
-    interpretExpress gf listEx >>= 
-    \case
-        (newGf, Value (List lst)) -> return (newGf, Value . List $ ex:lst)
+        (newGf, Value (List lst)) -> return (newGf,f lst)
         _ -> return (gf, Error ValueError)
 
 applyOperator :: Ident -> GlobalFuncs -> Express -> Express -> IO State 
