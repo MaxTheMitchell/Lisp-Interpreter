@@ -66,6 +66,7 @@ preDefinedFuncs gf "car" [ex] = car gf ex
 preDefinedFuncs gf "cdr" [ex] = cdr gf ex
 preDefinedFuncs gf "null?" [ex] = isNull gf ex  
 preDefinedFuncs gf "cons" [ex1, ex2] = cons gf ex1 ex2
+preDefinedFuncs gf "newline" [] = putStr "\n" >> return (gf, Value $ List [] )
 preDefinedFuncs gf ident [ex1, ex2] = applyOperator gf ident ex1 ex2
 preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
 
