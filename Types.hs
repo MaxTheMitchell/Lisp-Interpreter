@@ -14,7 +14,9 @@ type Program = [Express]
 
 data Express 
     = A Atom 
-    | Comb [Express]
+    | Comb Comb
+
+type Comb = [Express]
 
 instance Show Express where 
     show (A a) = show a 
