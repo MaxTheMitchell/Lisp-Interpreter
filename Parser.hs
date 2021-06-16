@@ -6,9 +6,8 @@ import Types
     ( Atom(Value, Ident), Express(..), Ident, Program, Value(..) ) 
 
 import Text.ParserCombinators.ReadP
-    ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, eof, string, get, skipMany, manyTill)
-import Data.Char ( isDigit, isAlpha, isAlphaNum )
-import Control.Applicative ((<|>), Alternative (many))
+import Data.Char ( isDigit, isAlpha, isSpace )
+import Control.Applicative ((<|>))
 
 
 parseProgram :: String -> Maybe Program 
@@ -36,7 +35,7 @@ valueParser = intParser <|> boolParser
         boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident
-identParser = (:) <$> (skipSpaces *> satisfy isAlpha) <*> munch isAlphaNum
+identParser = (:) <$> (skipSpaces *> satisfy isAlpha) <*> munch (\c -> not (isSpace c || c `elem` "()"))
 
 skipComments :: ReadP () 
 skipComments = skipMany (skipSpaces *> char ';' *> manyTill get (char '\n' <|> ' ' <$ eof ) <* skipSpaces )
