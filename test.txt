@@ -12,4 +12,5 @@
 
 (display (fib (+ 7 3)))
 
-(display (list (+ 1 2) 2 3))
+(display 
+(car (list 1 2 3)))

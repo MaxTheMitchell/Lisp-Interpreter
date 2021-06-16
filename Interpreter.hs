@@ -7,7 +7,7 @@ import Types
 import AtomOperators (applyAtomOperator)
 import Parser (parseProgram)
 import Data.Map (empty, (!?), insert)
-
+import Control.Monad (void)
 
 interpretProgram :: String -> IO () 
 interpretProgram input = 
@@ -19,7 +19,9 @@ runProgram :: GlobalFuncs -> Program -> IO ()
 runProgram _ [] =  return ()
 runProgram funcs (a:as) = 
     interpretExpress funcs a >>= 
-        \(newFuncs, _) -> runProgram newFuncs as  
+    \case 
+        (_, Error e) -> void . putStr $ show e
+        (newFuncs, _) -> runProgram newFuncs as  
 
 interpretExpress :: GlobalFuncs -> Express -> IO State   
 interpretExpress gf (Comb (A(Ident funcName):args)) = callFunction gf funcName args
@@ -60,6 +62,7 @@ preDefinedFuncs gf "display" [ex] = display gf ex
 preDefinedFuncs gf "define" [perameters, body] = defineFunction gf perameters body 
 preDefinedFuncs gf "if" [condition, thenCase, elseCase] = ifConditional gf condition thenCase elseCase
 preDefinedFuncs gf "list" exs = createList gf exs
+preDefinedFuncs gf "car" [ex] = car gf ex 
 preDefinedFuncs gf ident [ex1, ex2] = applyOperator gf ident ex1 ex2
 preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
 
@@ -83,6 +86,13 @@ ifConditional gf condtion ifCase elseCase =
 
 createList :: GlobalFuncs -> [Express] -> IO State 
 createList gf = return . (,) gf . Value . List 
+
+car :: GlobalFuncs -> Express -> IO State 
+car gf ex = 
+    interpretExpress gf ex >>= 
+    \case
+        (newGf, Value (List (h:_))) -> interpretExpress newGf h 
+        _ -> return (gf, Error ValueError)  
 
 applyOperator :: GlobalFuncs -> Ident -> Express -> Express -> IO State 
 applyOperator gf1 ident ex1 ex2 = 
