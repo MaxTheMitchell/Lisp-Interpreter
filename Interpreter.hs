@@ -58,17 +58,24 @@ initFuncs :: GlobalFuncs
 initFuncs = empty 
 
 preDefinedFuncs :: GlobalFuncs -> Ident -> [Express] -> IO State 
-preDefinedFuncs gf "display" [ex] = display gf ex 
-preDefinedFuncs gf "define" [perameters, body] = defineFunction gf perameters body 
+preDefinedFuncs gf "newline" [] = putStr "\n" >> return (gf, Value $ List [] )
+preDefinedFuncs gf ident [ex] = oneArgFunc ident gf ex 
+preDefinedFuncs gf ident [ex1, ex2] = twoArgFunc ident gf ex1 ex2 
 preDefinedFuncs gf "if" [condition, thenCase, elseCase] = ifConditional gf condition thenCase elseCase
 preDefinedFuncs gf "list" exs = createList gf exs
-preDefinedFuncs gf "car" [ex] = car gf ex
-preDefinedFuncs gf "cdr" [ex] = cdr gf ex
-preDefinedFuncs gf "null?" [ex] = isNull gf ex  
-preDefinedFuncs gf "cons" [ex1, ex2] = cons gf ex1 ex2
-preDefinedFuncs gf "newline" [] = putStr "\n" >> return (gf, Value $ List [] )
-preDefinedFuncs gf ident [ex1, ex2] = applyOperator gf ident ex1 ex2
 preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
+
+oneArgFunc :: Ident -> GlobalFuncs -> Express -> IO State
+oneArgFunc "display" = display
+oneArgFunc "car" = car
+oneArgFunc "cdr" = cdr 
+oneArgFunc "null?" = isNull
+oneArgFunc ident = \_ _ -> return (initFuncs , Error $ UnboundVariable ident )
+
+twoArgFunc :: Ident -> GlobalFuncs  -> Express -> Express -> IO State 
+twoArgFunc "define" = defineFunction
+twoArgFunc "cons" = cons 
+twoArgFunc op = applyOperator op 
 
 display :: GlobalFuncs -> Express -> IO State
 display gf ex = 
@@ -132,8 +139,8 @@ cons gf ex listEx =
         (newGf, Value (List lst)) -> return (newGf, Value . List $ ex:lst)
         _ -> return (gf, Error ValueError)
 
-applyOperator :: GlobalFuncs -> Ident -> Express -> Express -> IO State 
-applyOperator gf1 ident ex1 ex2 = 
+applyOperator :: Ident -> GlobalFuncs -> Express -> Express -> IO State 
+applyOperator ident gf1 ex1 ex2 = 
     interpretExpress gf1 ex1 >>= \(gf2, a1) -> 
     interpretExpress gf2 ex2 >>= \(gf3, a2) ->
         return (gf3, applyAtomOperator ident a1 a2)
