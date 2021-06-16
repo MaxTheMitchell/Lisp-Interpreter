@@ -15,7 +15,11 @@ type Program = [Express]
 data Express 
     = A Atom 
     | Comb [Express]
-    deriving Show
+
+instance Show Express where 
+    show (A a) = show a 
+    show (Comb exs) = 
+        "(" ++ unwords (map show exs) ++ ")"
 
 data Atom 
     = Ident Ident
@@ -32,10 +36,12 @@ type Ident = String
 data Value 
     = Int Int 
     | Bool Bool
+    | List [Express]
 
 instance Show Value where
     show (Int i) = show i
     show (Bool b) = show b
+    show (List ex) = "(" ++ unwords (map show ex) ++ ")"
 
 data Error 
     = OperatorError

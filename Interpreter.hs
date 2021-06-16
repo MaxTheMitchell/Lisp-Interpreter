@@ -59,6 +59,7 @@ preDefinedFuncs :: GlobalFuncs -> Ident -> [Express] -> IO State
 preDefinedFuncs gf "display" [ex] = display gf ex 
 preDefinedFuncs gf "define" [perameters, body] = defineFunction gf perameters body 
 preDefinedFuncs gf "if" [condition, thenCase, elseCase] = ifConditional gf condition thenCase elseCase
+preDefinedFuncs gf "list" exs = createList gf exs
 preDefinedFuncs gf ident [ex1, ex2] = applyOperator gf ident ex1 ex2
 preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
 
@@ -71,7 +72,7 @@ defineFunction :: GlobalFuncs -> Express -> Express -> IO State
 defineFunction gf perameters body =
     case expressToIdents perameters of 
         Just (funcName:parameterNames) ->
-             return (insert funcName (parameterNames, body) gf, Error ValueError) 
+             return (insert funcName (parameterNames, body) gf, Ident funcName) 
         _ -> return (gf, Error UnknownError) 
 
 ifConditional :: GlobalFuncs -> Express -> Express -> Express -> IO State 
@@ -79,6 +80,9 @@ ifConditional gf condtion ifCase elseCase =
     interpretExpress gf condtion >>= \case  
         (newGf, Value (Bool b)) -> interpretExpress newGf $ if b then ifCase else elseCase
         _ -> return (gf, Error ValueError) 
+
+createList :: GlobalFuncs -> [Express] -> IO State 
+createList gf = return . (,) gf . Value . List 
 
 applyOperator :: GlobalFuncs -> Ident -> Express -> Express -> IO State 
 applyOperator gf1 ident ex1 ex2 = 

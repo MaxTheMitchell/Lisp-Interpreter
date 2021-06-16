@@ -11,3 +11,5 @@
 ;(display 2)
 
 (display (fib (+ 7 3)))
+
+(display (list (+ 1 2) 2 3))

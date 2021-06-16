@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Parser where 
+module Parser (parseProgram) where 
 
-import Types 
+import Types
+    ( Atom(Value, Ident), Express(..), Ident, Program, Value(..) ) 
 
 import Text.ParserCombinators.ReadP
     ( munch, munch1, satisfy, ReadP, skipSpaces, char, readP_to_S, eof, string, get, skipMany, manyTill)
