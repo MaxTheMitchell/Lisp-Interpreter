@@ -37,11 +37,13 @@ data Value
     = Int Int 
     | Bool Bool
     | List [Express]
+    | Lambda Lambda
 
 instance Show Value where
     show (Int i) = show i
-    show (Bool b) = show b
+    show (Bool b) = if b then "#t" else "#f"
     show (List ex) = "(" ++ unwords (map show ex) ++ ")"
+    show (Lambda (ps, body)) = "(lambda (" ++ unwords ps ++ ") " ++ show body ++ ")"
 
 data Error 
     = OperatorError

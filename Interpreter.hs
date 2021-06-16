@@ -20,26 +20,35 @@ runProgram _ [] =  return ()
 runProgram funcs (a:as) = 
     interpretExpress funcs a >>= 
     \case 
-        (_, Error e) -> void . putStr $ show e
+        (_, Error e) -> void . putStr $ show e ++ "\n"
         (newFuncs, _) -> runProgram newFuncs as  
 
 interpretExpress :: GlobalFuncs -> Express -> IO State   
 interpretExpress gf (Comb (A(Ident funcName):args)) = callFunction gf funcName args
-interpretExpress gf (Comb [ex]) = interpretExpress gf ex 
+interpretExpress gf (Comb (A(Value(Lambda lambda)):args)) = callLambda gf lambda args 
+interpretExpress gf (Comb exs) = interpretFirst gf exs 
 interpretExpress gf (A atom) = interpretAtom gf atom 
-interpretExpress gf _ = return (gf, Error UnknownError)
+
+interpretFirst :: GlobalFuncs -> [Express] -> IO State 
+interpretFirst gf [ex] = interpretExpress gf ex 
+interpretFirst gf (ex:exs) =
+    interpretExpress gf ex >>= \(newGf, atom) -> 
+    interpretExpress newGf (Comb $ A atom:exs)
+interpretFirst gf [] = return (gf, Error UnknownError )
 
 interpretAtom :: GlobalFuncs -> Atom -> IO State 
-interpretAtom gf (Value v) = return (gf, Value v)
 interpretAtom gf (Ident funcName) = callFunction gf funcName [] 
-interpretAtom gf (Error err) = return (gf, Error err)
+interpretAtom gf atom = return (gf, atom)
 
 callFunction :: GlobalFuncs -> Ident -> [Express] -> IO State 
-callFunction funcs funcName args = 
-    case funcs !? funcName of 
-        Nothing -> preDefinedFuncs funcs funcName args
-        Just (perameters, express) ->
-            interpretExpress funcs $ bindArguments perameters args express  
+callFunction gf funcName args = 
+    case gf !? funcName of 
+        Nothing -> preDefinedFuncs gf funcName args
+        Just  lambda -> callLambda gf lambda args
+
+callLambda :: GlobalFuncs -> Lambda -> [Express] -> IO State
+callLambda gf (perameters, body) args = 
+     interpretExpress gf $ bindArguments perameters args body
 
 bindArguments :: [Ident] -> [Express] -> Express -> Express   
 bindArguments [] [] express = express
@@ -75,6 +84,7 @@ oneArgFunc ident = \_ _ -> return (initFuncs , Error $ UnboundVariable ident )
 twoArgFunc :: Ident -> GlobalFuncs  -> Express -> Express -> IO State 
 twoArgFunc "define" = defineFunction
 twoArgFunc "cons" = cons 
+twoArgFunc "lambda" = defineLambda
 twoArgFunc op = applyOperator op 
 
 display :: GlobalFuncs -> Express -> IO State
@@ -101,6 +111,13 @@ defineFunction gf perameters body =
         Just (funcName:parameterNames) ->
              return (insert funcName (parameterNames, body) gf, Ident funcName) 
         _ -> return (gf, Error UnknownError) 
+
+defineLambda :: GlobalFuncs -> Express -> Express -> IO State 
+defineLambda gf ex body = 
+    return . (,) gf $
+    case expressToIdents ex of 
+        Just perameters -> Value $ Lambda (perameters, body)
+        Nothing  -> Error ValueError
 
 ifConditional :: GlobalFuncs -> Express -> Express -> Express -> IO State 
 ifConditional gf condtion ifCase elseCase = 

@@ -6,7 +6,7 @@ import Types
     ( Atom(Value, Ident), Express(..), Ident, Program, Value(..) ) 
 
 import Text.ParserCombinators.ReadP
-import Data.Char ( isDigit, isAlpha, isSpace )
+import Data.Char ( isDigit, isSpace )
 import Control.Applicative ((<|>))
 
 
@@ -23,10 +23,7 @@ expressParser =
     skipSpaces *> skipComments *> (A <$> atomParser <|> wrapInParenthesis (Comb <$> many expressParser))
 
 atomParser :: ReadP Atom 
-atomParser = Ident <$> identParser <|> Value <$> valueParser <|> operatorParser
-    where
-        operatorParser = (\c -> Ident [c]) <$> satisfy (`elem` "+-*/<>=")
-            <|> Ident <$> ((string "/=" <|> string ">=") <|> string "<=")
+atomParser = Ident <$> identParser <|> Value <$> valueParser
 
 valueParser :: ReadP Value 
 valueParser = intParser <|> boolParser
@@ -35,7 +32,9 @@ valueParser = intParser <|> boolParser
         boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident
-identParser = (:) <$> (skipSpaces *> satisfy isAlpha) <*> munch (\c -> not (isSpace c || c `elem` "()"))
+identParser = (:) <$> (skipSpaces *> 
+    satisfy (\c -> not (isDigit c || c `elem` "();#" ) )) 
+    <*> munch (\c -> not (isSpace c || c `elem` "();#"))
 
 skipComments :: ReadP () 
 skipComments = skipMany (skipSpaces *> char ';' *> manyTill get (char '\n' <|> ' ' <$ eof ) <* skipSpaces )

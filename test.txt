@@ -17,22 +17,48 @@
             (sum (cdr lst)))))
 
 (define 
-    (times i)
-    (if (< i 0)
+    (range start end)
+    (if (> start end)
         (list)
         (cons 
-            i 
-            (times (- i 1))
-)))
+            start
+            (range (+ start 1) end))))
 
-(define (test b) 
-    (if b (list 1) (list 2))
+(define (times i) (range 0 i))
+
+(define 
+    (map f lst)
+    ((if (null? lst)
+        (list) 
+        (cons 
+            (f (car lst))
+            (map f (cdr lst))))))
+
+(define 
+    (fibList i)
+    (map fib (times i))
 )
 
-;(display (test #f))
+(define 
+    (** n ex)
+    (if (<= ex 0)
+        1
+        (* n (** n (- ex 1)))
+    )
+)
 
-(display (cons (times 2) (times 5)))
+(display (** 2 10))
+(newline)
 
-;(display (cons 3 (list )))
+(display 
+   (map
+      (lambda (a) (* a 3))
+      (times 5) 
+))
+(newline)
 
-;(display (sum (list 1 2 3 4 5)))
+(display (fibList 10))
+(newline)
+
+(display (sum (list 1 2 3 4 5)))
+(newline)
