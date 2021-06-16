@@ -63,7 +63,8 @@ preDefinedFuncs gf "define" [perameters, body] = defineFunction gf perameters bo
 preDefinedFuncs gf "if" [condition, thenCase, elseCase] = ifConditional gf condition thenCase elseCase
 preDefinedFuncs gf "list" exs = createList gf exs
 preDefinedFuncs gf "car" [ex] = car gf ex
-preDefinedFuncs gf "cdr" [ex] = cdr gf ex 
+preDefinedFuncs gf "cdr" [ex] = cdr gf ex
+preDefinedFuncs gf "null?" [ex] = isNull gf ex  
 preDefinedFuncs gf ident [ex1, ex2] = applyOperator gf ident ex1 ex2
 preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
 
@@ -100,6 +101,13 @@ cdr gf ex =
     interpretExpress gf ex >>= 
     \case
         (newGf, Value (List (_:t))) -> return (newGf, Value $ List t)
+        _ -> return (gf, Error ValueError)  
+
+isNull :: GlobalFuncs -> Express  -> IO State 
+isNull gf ex = 
+    interpretExpress gf ex >>= 
+    \case
+        (newGf, Value (List lst)) -> return (newGf, Value . Bool $ null lst )
         _ -> return (gf, Error ValueError)  
 
 applyOperator :: GlobalFuncs -> Ident -> Express -> Express -> IO State 
