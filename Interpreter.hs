@@ -71,9 +71,22 @@ preDefinedFuncs gf ident _ = return (gf, Error $ UnboundVariable ident )
 
 display :: GlobalFuncs -> Express -> IO State
 display gf ex = 
-    interpretExpress gf ex >>= \(newGf, atom) -> 
-    putStr (show atom ++ "\n") >> return (newGf, atom) 
+    interpretExpress gf ex >>= 
+    \case
+        (newGf, Value (List l)) -> displayList newGf l 
+        (newGf, atom) -> putStr (show atom) >> return (newGf, atom) 
 
+displayList :: GlobalFuncs -> [Express] -> IO State
+displayList gf exs =
+    putStr "( " >> 
+        foldl (\io ex ->
+            io >>= \accGf ->  
+            display accGf ex >>= \(newGf, _) -> 
+            putStr " " >> return newGf) 
+        (return gf) exs >>= 
+            \newGf ->
+                putStr ")" >> return (newGf, Value $ List exs)
+    
 defineFunction :: GlobalFuncs -> Express -> Express -> IO State 
 defineFunction gf perameters body =
     case expressToIdents perameters of 
