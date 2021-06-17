@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
-module Interpreter (interpretProgram, interpretExpress) where 
+module Interpreter (interpretProgram, interpretExpress, interpretAtom) where 
 
 import Types
 import AtomOperators (applyAtomOperator)
@@ -116,7 +116,7 @@ defineFunction :: Express -> Express -> GlobalFuncs -> IO State
 defineFunction perameters body gf =
     case expressToIdents perameters of 
         Just (funcName:parameterNames) ->
-             return (insert funcName (parameterNames, body) gf, Ident funcName) 
+             return (insert funcName (parameterNames, body) gf, Value $ Lambda (parameterNames, body)) 
         _ -> return (gf, Error UnknownError) 
 
 defineLambda :: Express -> Express -> GlobalFuncs -> IO State 
@@ -124,14 +124,14 @@ defineLambda ex body gf =
     return . (gf,) $
     case expressToIdents ex of 
         Just perameters -> Value $ Lambda (perameters, body)
-        Nothing  -> Error ValueError
+        Nothing  -> Error TypeError
 
 ifConditional :: Express -> Express -> Express -> GlobalFuncs -> IO State 
 ifConditional condtion ifCase elseCase = 
     interpretExpress condtion >=> \case  
         (newGf, Value (Bool b)) -> 
             interpretExpress (if b then ifCase else elseCase) newGf
-        _ -> return (empty, Error ValueError) 
+        _ -> return (empty, Error TypeError) 
 
 createList :: [Express] -> GlobalFuncs -> IO State 
 createList exs gf = return . (gf,) . Value $ List exs 
@@ -141,13 +141,13 @@ car ex =
     interpretExpress ex >=> 
     \case
         (newGf, Value (List (h:_))) -> interpretExpress h newGf 
-        _ -> return (empty, Error ValueError)  
+        _ -> return (empty, Error TypeError)  
 
 cdr :: Express -> GlobalFuncs -> IO State 
 cdr = 
     tryApplyListFunc (\case 
         (_:ex) -> Value $ List ex
-        _ -> Error ValueError)
+        _ -> Error TypeError)
         
 isNull :: Express -> GlobalFuncs -> IO State 
 isNull = tryApplyListFunc (Value . Bool . null)
@@ -160,7 +160,7 @@ tryApplyListFunc f ex =
     interpretExpress ex >=> 
     \case
         (newGf, Value (List lst)) -> return (newGf,f lst)
-        _ -> return (empty, Error ValueError)
+        _ -> return (empty, Error TypeError)
 
 applyOperator :: Ident -> Express -> Express -> GlobalFuncs -> IO State 
 applyOperator ident ex1 ex2 = 

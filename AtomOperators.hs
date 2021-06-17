@@ -5,7 +5,7 @@ module AtomOperators (applyAtomOperator) where
 
 import Types
     ( Atom(Error, Value),
-      Error(ValueError, UnboundVariable),
+      Error(UnboundVariable, UnknownError, TypeError),
       Ident,
       Value(Bool, Int) )
 
@@ -25,13 +25,17 @@ twoArgFunc ident =
 
 intFuncs :: Ident -> Maybe (Atom -> Atom -> Atom)
 intFuncs ident = 
-    wrapAdamIntFunc <$>
-        case ident of 
-            "+" -> Just (+)
-            "-" -> Just (-)
-            "*" -> Just (*)
-            "/" -> Just div
-            _ -> Nothing 
+    (\f a1 a2 ->
+        case (a1,a2) of  
+            (Value v1, Value v2) -> Value $ f v1 v2 
+            _ -> Error TypeError  
+    ) <$>
+    case ident of 
+        "+" -> Just (+)
+        "-" -> Just (-)
+        "*" -> Just (*)
+        "/" -> Just (/)
+        _ -> Nothing 
 
 boolFuncs :: Ident -> Maybe (Atom -> Atom -> Atom)
 boolFuncs ident =
@@ -45,15 +49,10 @@ boolFuncs ident =
             "/=" -> Just (/=)
             _ -> Nothing 
 
-wrapAdamIntFunc :: (Int -> Int -> Int) -> (Atom -> Atom -> Atom)
-wrapAdamIntFunc f a1 a2 = case (a1, a2) of 
-    (Value (Int i1),Value (Int i2)) -> Value . Int $ f i1 i2
-    _ -> carryOverError ValueError [a1, a2] 
-
 wrapAdamBoolFunc :: (Int  -> Int -> Bool) -> (Atom -> Atom -> Atom)
 wrapAdamBoolFunc f a1 a2 = case (a1, a2) of 
     (Value (Int b1),Value (Int b2)) -> Value . Bool $ f b1 b2
-    _ -> carryOverError ValueError [a1, a2] 
+    _ -> carryOverError UnknownError [a1, a2] 
 
 carryOverError :: Error -> [Atom] -> Atom 
 carryOverError fallback = 

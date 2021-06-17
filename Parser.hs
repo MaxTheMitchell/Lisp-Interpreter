@@ -26,15 +26,16 @@ atomParser :: ReadP Atom
 atomParser = Ident <$> identParser <|> Value <$> valueParser
 
 valueParser :: ReadP Value 
-valueParser = intParser <|> boolParser
+valueParser = intParser <|> floatParser <|> boolParser
     where 
         intParser = Int . read <$> munch1 isDigit
+        floatParser = (\a b ->  Float . read . (++) a . (++) b ) <$> munch1 isDigit <*> string "." <*> munch1 isDigit
         boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident
 identParser = (:) <$> (skipSpaces *> 
-    satisfy (\c -> not (isDigit c || c `elem` "();#" ) )) 
-    <*> munch (\c -> not (isSpace c || c `elem` "();#"))
+    satisfy (\c -> not (isDigit c || c `elem` "();#." ) )) 
+    <*> munch (\c -> not (isSpace c || c `elem` "();#."))
 
 skipComments :: ReadP () 
 skipComments = skipMany (skipSpaces *> char ';' *> manyTill get (char '\n' <|> ' ' <$ eof ) <* skipSpaces )

@@ -50,15 +50,14 @@
 (display (** 2 10))
 (newline)
 
-(display 
-   (map
-      (lambda (a) (* a 3))
-      (times 5) 
-))
-(newline)
-
 (display (fibList 10))
 (newline)
 
 (display (sum (list 1 2 3 4 5)))
+(newline)
+
+(display (+ 3.14 2.22) )
+(newline)
+
+(display (/ 3.22 2) )
 (newline)
