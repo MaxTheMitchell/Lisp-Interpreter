@@ -7,18 +7,14 @@ import Types
 
 applyAtomOperator :: Ident -> Atom  -> Atom  -> Atom
 applyAtomOperator ident a1 a2 = 
-    case twoArgFunc ident of 
+    \case 
         Nothing -> Error $ UnboundVariable ident 
         Just f -> f a1 a2 
-
-twoArgFunc :: Ident -> Maybe (Atom -> Atom -> Atom)
-twoArgFunc ident = 
-    foldl (\acc new -> 
+    $ foldl (\acc new -> 
         case acc of 
             Nothing -> new ident
             Just _ -> acc     
         ) Nothing [miscFuncs, numberFuncs, compareFuncs, boolFuncs]
-
 
 miscFuncs :: Ident -> Maybe (Atom -> Atom -> Atom) 
 miscFuncs "eqv?" = Just (\a1 a2 -> 
