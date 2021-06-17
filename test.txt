@@ -1,3 +1,4 @@
+
 ;test file
 (define 
     (fib i)
@@ -65,5 +66,11 @@
 (display #\f)
 (newline)
 
-(display "Hello world!" )
+(display (list->string (cons #\f (string->list "Hello world!")) ))
+(newline)
+
+(display (list->string (list #\f (integer->char 247) #\o ) ) )
+(newline)
+
+(display (string->number "34.5"))
 (newline)
