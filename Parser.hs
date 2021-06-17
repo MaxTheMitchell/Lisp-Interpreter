@@ -26,10 +26,11 @@ atomParser :: ReadP Atom
 atomParser = Ident <$> identParser <|> Value <$> valueParser
 
 valueParser :: ReadP Value 
-valueParser = intParser <|> floatParser <|> boolParser
+valueParser = intParser <|> floatParser <|> charParser <|> boolParser
     where 
         intParser = Number . read <$> munch1 isDigit
         floatParser = (\a b -> Number . read . (++) a . (++) b ) <$> munch1 isDigit <*> string "." <*> munch1 isDigit
+        charParser = Char <$> (string "#\\" *> get) 
         boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident

@@ -37,6 +37,7 @@ type Ident = String
 
 data Value 
     = Number Number
+    | Char Char 
     | Bool Bool
     | List [Express]
     | Lambda Lambda
@@ -47,7 +48,8 @@ instance Show Value where
     show (Number n) = 
         if fromInteger (floor n) == n
             then takeWhile (not . (==) '.') $ show n 
-            else show n    
+            else show n
+    show (Char c) = show c     
     show (Bool b) = if b then "#t" else "#f"
     show (List ex) = "(" ++ unwords (map show ex) ++ ")"
     show (Lambda (ps, body)) = "(lambda (" ++ unwords ps ++ ") " ++ show body ++ ")"

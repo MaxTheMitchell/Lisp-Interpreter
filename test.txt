@@ -61,3 +61,5 @@
 
 (display (/ 3.22 2) )
 (newline)
+
+(display #\f)
