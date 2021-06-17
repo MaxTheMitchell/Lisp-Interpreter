@@ -63,3 +63,7 @@
 (newline)
 
 (display #\f)
+(newline)
+
+(display "Hello world!" )
+(newline)
