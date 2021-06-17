@@ -103,15 +103,11 @@ display ex =
         (newGf, atom) -> putStr (show atom) >> return (newGf, atom) 
 
 displayList :: [Express] -> GlobalFuncs -> IO State
-displayList exs gf =
-    putStr "( " >> 
-        foldl (\io ex ->
-            io >>=  
-            (display ex >=> \(newGf, _) -> 
-            putStr " " >> return newGf)) 
-        (return gf) exs >>= 
-            \newGf ->
-                putStr ")" >> return (newGf, Value $ List exs)
+displayList exs = 
+    combToAtoms exs >=> \case 
+        (gf, atom@(Value (List atoms))) -> 
+            putStr  ("(" ++ unwords (map show atoms) ++ ")") >> return (gf, atom)
+        err -> return err 
     
 defineFunction :: Express -> Express -> GlobalFuncs -> IO State 
 defineFunction perameters body gf =
