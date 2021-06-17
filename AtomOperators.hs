@@ -5,9 +5,10 @@ module AtomOperators (applyAtomOperator) where
 
 import Types
     ( Atom(Error, Value),
-      Error(UnboundVariable, UnknownError, TypeError),
+      Error(UnknownError, UnboundVariable),
       Ident,
-      Value(Bool, Int) )
+      Value(Bool, Number),
+      Number )
 
 applyAtomOperator :: Ident -> Atom  -> Atom  -> Atom
 applyAtomOperator ident a1 a2 = 
@@ -25,11 +26,7 @@ twoArgFunc ident =
 
 intFuncs :: Ident -> Maybe (Atom -> Atom -> Atom)
 intFuncs ident = 
-    (\f a1 a2 ->
-        case (a1,a2) of  
-            (Value v1, Value v2) -> Value $ f v1 v2 
-            _ -> Error TypeError  
-    ) <$>
+    wrapAdamNumFunc <$>
     case ident of 
         "+" -> Just (+)
         "-" -> Just (-)
@@ -49,9 +46,14 @@ boolFuncs ident =
             "/=" -> Just (/=)
             _ -> Nothing 
 
-wrapAdamBoolFunc :: (Int  -> Int -> Bool) -> (Atom -> Atom -> Atom)
+wrapAdamNumFunc :: (Number -> Number -> Number) -> (Atom -> Atom -> Atom)
+wrapAdamNumFunc f a1 a2 = case (a1, a2) of 
+    (Value (Number n1),Value (Number n2)) -> Value . Number $ f n1 n2
+    _ -> carryOverError UnknownError [a1, a2] 
+
+wrapAdamBoolFunc :: (Number -> Number -> Bool) -> (Atom -> Atom -> Atom)
 wrapAdamBoolFunc f a1 a2 = case (a1, a2) of 
-    (Value (Int b1),Value (Int b2)) -> Value . Bool $ f b1 b2
+    (Value (Number n1),Value (Number n2)) -> Value . Bool $ f n1 n2
     _ -> carryOverError UnknownError [a1, a2] 
 
 carryOverError :: Error -> [Atom] -> Atom 

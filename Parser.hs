@@ -28,8 +28,8 @@ atomParser = Ident <$> identParser <|> Value <$> valueParser
 valueParser :: ReadP Value 
 valueParser = intParser <|> floatParser <|> boolParser
     where 
-        intParser = Int . read <$> munch1 isDigit
-        floatParser = (\a b ->  Float . read . (++) a . (++) b ) <$> munch1 isDigit <*> string "." <*> munch1 isDigit
+        intParser = Number . read <$> munch1 isDigit
+        floatParser = (\a b -> Number . read . (++) a . (++) b ) <$> munch1 isDigit <*> string "." <*> munch1 isDigit
         boolParser = Bool True <$ string "#t" <|> Bool False <$ string "#f" 
 
 identParser :: ReadP Ident
