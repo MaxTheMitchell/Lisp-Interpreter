@@ -1,0 +1,82 @@
+
+;std lib 
+
+;list funcs
+
+(define 
+    (map f lst)
+    ((if (null? lst)
+        (list) 
+        (cons 
+            (f (car lst))
+            (map f (cdr lst))))))
+(define 
+    (filter f lst)
+    (if (null? lst)
+        list 
+        (if (f (car lst))
+            (cons (car lst) (filter f (cdr lst)))
+            (filter f (cdr lst)))))
+
+(define (foldl f acc lst) 
+    (if (null? lst)
+        acc 
+        (foldl
+            f
+            (f acc (car lst))
+            (cdr lst))))
+
+(define 
+    (all? f lst)
+    (if (null? lst) 
+        #t
+        (if (f (car lst))
+            (all? f (cdr lst))
+            #f       
+)))
+
+(define 
+    (any? f lst)
+    (if (null? lst) 
+        #f
+        (if (f (car lst))
+            #t
+            (any? f (cdr lst))
+)))
+
+(define 
+    (sum lst)
+    (foldl + 0 lst))
+
+(define (reverseCons lst e) (cons e lst) )
+
+(define (reverse lst) (foldl reverseCons list lst))  
+
+(define 
+    (append lst1 lst2) 
+    (foldl reverseCons lst2 (reverse lst1)))
+
+(define 
+    (range start end)
+    (if (> start end)
+        (list)
+        (cons 
+            start
+            (range (+ start 1) end))))
+
+;string 
+
+(define 
+    (append-str str1 str2)
+    (list->string
+        (append 
+            (string->list str1) 
+            (string->list str2))))
+
+;tests 
+
+(display 
+    (filter
+        (lambda a (> a 5))
+        (range 0 10)
+))

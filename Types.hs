@@ -45,6 +45,13 @@ data Value
 
 type Number = Float
 
+instance Eq Value where
+    Number n1 == Number n2 = n1 == n2 
+    Char c1 == Char c2 = c1 == c2 
+    String str1 == String str2 = str1 == str2 
+    Bool b1 == Bool b2 = b1 == b2 
+    _ == _ = False
+
 instance Show Value where
     show (Number n) = 
         if fromInteger (floor n) == n

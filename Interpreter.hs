@@ -6,7 +6,7 @@ module Interpreter (interpretProgram, interpretExpress, interpretAtom) where
 
 import Types
 import AtomOperators (applyAtomOperator)
-import TypeConversion (convertTypes)
+import OneArgAtomFuncs (oneArgAtomFunc)
 import Parser (parseProgram)
 import Data.Map (empty, (!?), insert)
 import Control.Monad (void, (>=>))
@@ -74,11 +74,11 @@ initFuncs :: GlobalFuncs
 initFuncs = empty 
 
 preDefinedFuncs :: Ident -> [Express] -> GlobalFuncs -> IO State 
+preDefinedFuncs "list" exs = createList exs
 preDefinedFuncs "newline" [] = newLine
 preDefinedFuncs ident [ex] = oneArgFunc ident ex 
 preDefinedFuncs ident [ex1, ex2] = twoArgFunc ident ex1 ex2 
 preDefinedFuncs "if" [condition, thenCase, elseCase] = ifConditional condition thenCase elseCase
-preDefinedFuncs "list" exs = createList exs
 preDefinedFuncs ident _ = return . (, Error $ UnboundVariable ident)
 
 oneArgFunc :: Ident -> Express -> GlobalFuncs -> IO State
@@ -86,7 +86,7 @@ oneArgFunc "display" = display
 oneArgFunc "car" = car
 oneArgFunc "cdr" = cdr 
 oneArgFunc "null?" = isNull
-oneArgFunc ident = convertExpress ident 
+oneArgFunc ident = applyOneArgAtomFunc ident 
 
 twoArgFunc :: Ident -> Express -> Express -> GlobalFuncs -> IO State 
 twoArgFunc "define" = defineFunction
@@ -141,19 +141,19 @@ car ex =
     interpretExpress ex >=> 
     \case
         (newGf, Value (List (h:_))) -> interpretExpress h newGf 
-        _ -> return (empty, Error TypeError)  
+        _ -> return (empty, Error TypeError )  
 
 cdr :: Express -> GlobalFuncs -> IO State 
 cdr = 
     tryApplyListFunc (\case 
         (_:ex) -> Value $ List ex
         _ -> Error TypeError)
-        
-isNull :: Express -> GlobalFuncs -> IO State 
-isNull = tryApplyListFunc (Value . Bool . null)
-    
+            
 cons :: Express -> Express -> GlobalFuncs -> IO State 
 cons ex = tryApplyListFunc (Value . List . (:) ex) 
+
+isNull :: Express -> GlobalFuncs -> IO State 
+isNull = tryApplyListFunc (Value . Bool . null)
 
 tryApplyListFunc :: ([Express] -> Atom) -> Express -> GlobalFuncs -> IO State 
 tryApplyListFunc f ex = 
@@ -168,13 +168,13 @@ applyOperator ident ex1 ex2 =
     interpretExpress ex2 gf1 >>= \(gf2, a2) ->
         return (gf2, applyAtomOperator ident a1 a2)
 
-convertExpress :: Ident -> Express -> GlobalFuncs -> IO State 
-convertExpress ident ex = 
+applyOneArgAtomFunc :: Ident -> Express -> GlobalFuncs -> IO State 
+applyOneArgAtomFunc ident ex = 
     interpretExpress ex >=> \case 
         (gf, Value (List comb)) -> 
             combToAtoms comb gf >>= \(newGf, atoms) ->
-            return (newGf, convertTypes ident atoms)
-        (gf, atom) -> return (gf, convertTypes ident atom) 
+            return (newGf, oneArgAtomFunc ident atoms)
+        (gf, atom) -> return (gf, oneArgAtomFunc ident atom) 
 
 expressToIdents :: Express -> Maybe [Ident]
 expressToIdents (Comb exs) = 
