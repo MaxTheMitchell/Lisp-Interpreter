@@ -41,8 +41,9 @@ interpretAtom atom = return . (,atom)
 interpretCombHead :: Comb -> GlobalFuncs -> IO State 
 interpretCombHead [ex] = interpretExpress ex
 interpretCombHead (ex:exs) = 
-    interpretExpress ex >=> \(newGf, atom) -> 
-        interpretExpress (Comb $ A atom:exs) newGf
+    interpretExpress ex >=> \case
+        (_, err@(Error _)) -> return (empty, err) 
+        (newGf, atom) -> interpretExpress (Comb $ A atom:exs) newGf
 interpretCombHead [] = return . (,Error UnknownError) 
 
 callFunction :: Ident -> [Express] -> GlobalFuncs -> IO State 
@@ -66,6 +67,7 @@ bindArgument param arg (A (Ident ident))
     | ident == param  = arg 
     | otherwise = A $ Ident ident
 bindArgument _ _ (A atom) = A atom 
+bindArgument _ _ comb@(Comb (A (Ident "lambda"):_)) = comb
 bindArgument param arg (Comb es) = Comb $ map (bindArgument param arg) es  
 
 initFuncs :: GlobalFuncs 
@@ -99,6 +101,7 @@ display :: Express -> GlobalFuncs -> IO State
 display ex = 
     interpretExpress ex >=> 
     \case
+        (_, err@(Error _))-> return (empty, err)
         (newGf, Value (List l)) -> displayList l newGf 
         (newGf, atom) -> putStr (show atom) >> return (newGf, atom) 
 

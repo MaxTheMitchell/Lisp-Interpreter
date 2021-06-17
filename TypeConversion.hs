@@ -24,6 +24,8 @@ convertTypes ident (Value val) =
             if n /= fromInteger (floor n) 
                 then Nothing 
                 else Just . Char . chr $ floor n
+        ("number->string", Number n) -> 
+            Just . String $ show n 
         ("string->number", String str) ->
             Number <$> readMaybe str 
         ("string->list", String str) -> 
