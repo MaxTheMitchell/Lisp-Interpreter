@@ -14,4 +14,4 @@ An interpreter for a lisp like language written in Haskell.
 - [x] lists
 - [x] lambdas
 - [x] float, char and string types 
-- [ ] More IO
+- [x] More IO

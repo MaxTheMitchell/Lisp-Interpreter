@@ -76,6 +76,7 @@ initFuncs = empty
 preDefinedFuncs :: Ident -> [Express] -> GlobalFuncs -> IO State 
 preDefinedFuncs "list" exs = createList exs
 preDefinedFuncs "newline" [] = newLine
+preDefinedFuncs "userInput" [] = userInput 
 preDefinedFuncs ident [ex] = oneArgFunc ident ex 
 preDefinedFuncs ident [ex1, ex2] = twoArgFunc ident ex1 ex2 
 preDefinedFuncs "if" [condition, thenCase, elseCase] = ifConditional condition thenCase elseCase
@@ -102,6 +103,9 @@ twoArgFunc op = applyOperator op
 
 newLine :: GlobalFuncs -> IO State 
 newLine gf = putStr "\n" >> return (Value $ List [], gf)
+
+userInput :: GlobalFuncs -> IO State 
+userInput gf = (,gf) . Value . String  <$> getLine 
 
 display :: Atom -> GlobalFuncs -> IO State
 display err@(Error _) = return . (err,)

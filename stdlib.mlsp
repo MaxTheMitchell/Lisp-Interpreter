@@ -83,4 +83,4 @@
 
 (display (or (not (> 10 4)) #f) )
 
-(display (readFile "Main.hs"))
+(display (writeFile "test.txt" userInput ) )
