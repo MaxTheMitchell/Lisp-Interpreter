@@ -97,6 +97,7 @@ twoArgFunc :: Ident -> Express -> Express -> GlobalFuncs -> IO State
 twoArgFunc "define" = defineFunction
 twoArgFunc "cons" = cons 
 twoArgFunc "lambda" = defineLambda
+twoArgFunc "writeFile" = myWriteFile
 twoArgFunc op = applyOperator op 
 
 newLine :: GlobalFuncs -> IO State 
@@ -110,6 +111,15 @@ display atom = (>>) (putStr $ show atom) . return . (atom,)
 myReadFile :: Atom -> GlobalFuncs -> IO State 
 myReadFile (Value (String str)) gf = (, gf) . Value . String <$> readFile str 
 myReadFile _ _ = return (Error TypeError, empty)
+
+myWriteFile :: Express -> Express -> GlobalFuncs -> IO State 
+myWriteFile ex1 ex2 = 
+    interpretExpress ex1 >=> \(a1, gf) -> 
+    interpretExpress ex2 gf >>= \(a2, newGf) -> 
+        case (a1, a2) of 
+            (Value (String filePath), Value (String str)) -> 
+                writeFile filePath str >> return (a2, newGf)
+            _ -> return (Error TypeError, newGf)
 
 displayList :: [Express] -> GlobalFuncs -> IO State
 displayList exs = 
