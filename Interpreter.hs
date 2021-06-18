@@ -22,8 +22,8 @@ runProgram [] =  const $ return ()
 runProgram (a:as) = 
     interpretExpress a >=> 
     \case 
-        (_, Error e) -> void . putStr $ show e ++ "\n"
-        (newGf, _) -> runProgram as newGf
+        (Error e, _) -> void . putStr $ show e ++ "\n"
+        (_, newGf) -> runProgram as newGf
 
 interpretExpress :: Express -> GlobalFuncs -> IO State   
 interpretExpress (Comb comb) = interpretComb comb
@@ -36,15 +36,15 @@ interpretComb comb = interpretCombHead comb
 
 interpretAtom ::  Atom -> GlobalFuncs -> IO State 
 interpretAtom (Ident funcName) = callFunction funcName [] 
-interpretAtom atom = return . (,atom)
+interpretAtom atom = return . (atom,)
 
 interpretCombHead :: Comb -> GlobalFuncs -> IO State 
 interpretCombHead [ex] = interpretExpress ex
 interpretCombHead (ex:exs) = 
     interpretExpress ex >=> \case
-        (_, err@(Error _)) -> return (empty, err) 
-        (newGf, atom) -> interpretExpress (Comb $ A atom:exs) newGf
-interpretCombHead [] = return . (,Error UnknownError) 
+        (err@(Error _), _) -> return (err, empty) 
+        (atom, newGf) -> interpretExpress (Comb $ A atom:exs) newGf
+interpretCombHead [] = return . (Error UnknownError,) 
 
 callFunction :: Ident -> [Express] -> GlobalFuncs -> IO State 
 callFunction funcName args gf = 
@@ -79,14 +79,18 @@ preDefinedFuncs "newline" [] = newLine
 preDefinedFuncs ident [ex] = oneArgFunc ident ex 
 preDefinedFuncs ident [ex1, ex2] = twoArgFunc ident ex1 ex2 
 preDefinedFuncs "if" [condition, thenCase, elseCase] = ifConditional condition thenCase elseCase
-preDefinedFuncs ident _ = return . (, Error $ UnboundVariable ident)
+preDefinedFuncs ident _ = return . (Error $ UnboundVariable ident,)
 
 oneArgFunc :: Ident -> Express -> GlobalFuncs -> IO State
-oneArgFunc "display" = display
-oneArgFunc "car" = car
-oneArgFunc "cdr" = cdr 
-oneArgFunc "null?" = isNull
-oneArgFunc ident = applyOneArgAtomFunc ident 
+oneArgFunc ident ex =
+    interpretExpress ex >=>
+        uncurry
+        (case ident of 
+            "display" -> display 
+            "car" -> car 
+            "cdr" -> cdr 
+            "null?" -> isNull 
+            _ -> applyOneArgAtomFunc ident)
 
 twoArgFunc :: Ident -> Express -> Express -> GlobalFuncs -> IO State 
 twoArgFunc "define" = defineFunction
@@ -95,33 +99,30 @@ twoArgFunc "lambda" = defineLambda
 twoArgFunc op = applyOperator op 
 
 newLine :: GlobalFuncs -> IO State 
-newLine gf = putStr "\n" >> return (gf, Value $ List [] )
+newLine gf = putStr "\n" >> return (Value $ List [], gf)
 
-display :: Express -> GlobalFuncs -> IO State
-display ex = 
-    interpretExpress ex >=> 
-    \case
-        (_, err@(Error _))-> return (empty, err)
-        (newGf, Value (List l)) -> displayList l newGf 
-        (newGf, atom) -> putStr (show atom) >> return (newGf, atom) 
+display :: Atom -> GlobalFuncs -> IO State
+display err@(Error _) = return . (err,)
+display (Value (List l)) = displayList l 
+display atom = (>>) (putStr $ show atom) . return . (atom,)
 
 displayList :: [Express] -> GlobalFuncs -> IO State
 displayList exs = 
     combToAtoms exs >=> \case 
-        (gf, atom@(Value (List atoms))) -> 
-            putStr  ("(" ++ unwords (map show atoms) ++ ")") >> return (gf, atom)
+        (atom@(Value (List atoms)), gf) -> 
+            putStr  ("(" ++ unwords (map show atoms) ++ ")") >> return (atom, gf)
         err -> return err 
     
 defineFunction :: Express -> Express -> GlobalFuncs -> IO State 
 defineFunction perameters body gf =
     case expressToIdents perameters of 
         Just (funcName:parameterNames) ->
-             return (insert funcName (parameterNames, body) gf, Value $ Lambda (parameterNames, body)) 
-        _ -> return (gf, Error UnknownError) 
+             return (Value $ Lambda (parameterNames, body), insert funcName (parameterNames, body) gf) 
+        _ -> return (Error UnknownError, gf) 
 
 defineLambda :: Express -> Express -> GlobalFuncs -> IO State 
 defineLambda ex body gf =
-    return . (gf,) $
+    return . (,gf) $
     case expressToIdents ex of 
         Just perameters -> Value $ Lambda (perameters, body)
         Nothing  -> Error TypeError
@@ -129,52 +130,46 @@ defineLambda ex body gf =
 ifConditional :: Express -> Express -> Express -> GlobalFuncs -> IO State 
 ifConditional condtion ifCase elseCase = 
     interpretExpress condtion >=> \case  
-        (newGf, Value (Bool b)) -> 
+        (Value (Bool b), newGf) -> 
             interpretExpress (if b then ifCase else elseCase) newGf
-        _ -> return (empty, Error TypeError) 
+        _ -> return (Error TypeError, empty) 
 
 createList :: [Express] -> GlobalFuncs -> IO State 
-createList exs gf = return . (gf,) . Value $ List exs 
+createList exs gf = return . (,gf) . Value $ List exs 
 
-car :: Express -> GlobalFuncs -> IO State 
-car ex = 
-    interpretExpress ex >=> 
-    \case
-        (newGf, Value (List (h:_))) -> interpretExpress h newGf 
-        _ -> return (empty, Error TypeError )  
+car :: Atom -> GlobalFuncs -> IO State 
+car (Value (List (h:_))) = interpretExpress h
+car _ = return . (Error TypeError,)  
 
-cdr :: Express -> GlobalFuncs -> IO State 
+cdr :: Atom -> GlobalFuncs -> IO State 
 cdr = 
     tryApplyListFunc (\case 
         (_:ex) -> Value $ List ex
         _ -> Error TypeError)
             
 cons :: Express -> Express -> GlobalFuncs -> IO State 
-cons ex = tryApplyListFunc (Value . List . (:) ex) 
+cons ex lstEx = 
+    interpretExpress lstEx >=>
+        uncurry (tryApplyListFunc (Value . List . (:) ex)) 
 
-isNull :: Express -> GlobalFuncs -> IO State 
+isNull :: Atom -> GlobalFuncs -> IO State 
 isNull = tryApplyListFunc (Value . Bool . null)
 
-tryApplyListFunc :: ([Express] -> Atom) -> Express -> GlobalFuncs -> IO State 
-tryApplyListFunc f ex = 
-    interpretExpress ex >=> 
-    \case
-        (newGf, Value (List lst)) -> return (newGf,f lst)
-        _ -> return (empty, Error TypeError)
+tryApplyListFunc :: ([Express] -> Atom) -> Atom -> GlobalFuncs -> IO State 
+tryApplyListFunc f (Value (List lst)) = return . (f lst,)
+tryApplyListFunc _ _  = return . (Error TypeError,)
 
 applyOperator :: Ident -> Express -> Express -> GlobalFuncs -> IO State 
 applyOperator ident ex1 ex2 = 
-    interpretExpress ex1 >=> \(gf1, a1) -> 
-    interpretExpress ex2 gf1 >>= \(gf2, a2) ->
-        return (gf2, applyAtomOperator ident a1 a2)
+    interpretExpress ex1 >=> \(a1, gf1) -> 
+    interpretExpress ex2 gf1 >>= \(a2, gf2) ->
+        return (applyAtomOperator ident a1 a2, gf2)
 
-applyOneArgAtomFunc :: Ident -> Express -> GlobalFuncs -> IO State 
-applyOneArgAtomFunc ident ex = 
-    interpretExpress ex >=> \case 
-        (gf, Value (List comb)) -> 
-            combToAtoms comb gf >>= \(newGf, atoms) ->
-            return (newGf, oneArgAtomFunc ident atoms)
-        (gf, atom) -> return (gf, oneArgAtomFunc ident atom) 
+applyOneArgAtomFunc :: Ident -> Atom -> GlobalFuncs -> IO State 
+applyOneArgAtomFunc ident (Value (List comb)) =  
+    combToAtoms comb >=> \(atoms, newGf) ->
+        return (oneArgAtomFunc ident atoms, newGf)
+applyOneArgAtomFunc ident atom = return . (oneArgAtomFunc ident atom,) 
 
 expressToIdents :: Express -> Maybe [Ident]
 expressToIdents (Comb exs) = 
@@ -183,10 +178,10 @@ expressToIdents (A (Ident i)) = Just [i]
 expressToIdents _ = Nothing 
 
 combToAtoms :: Comb -> GlobalFuncs -> IO State 
-combToAtoms [] = return . (, Value $ List [])
+combToAtoms [] = return . (Value $ List [],)
 combToAtoms (ex:exs) = 
-    interpretExpress ex >=> \(gf, atom) -> 
+    interpretExpress ex >=> \(atom, gf) -> 
         combToAtoms exs gf >>= \case 
-            (newGf, Value (List comb)) -> 
-                return (newGf, Value . List $ A atom:comb)
-            _ -> return (empty, Error UnknownError) 
+            (Value (List comb), newGf) -> 
+                return (Value . List $ A atom:comb, newGf)
+            _ -> return (Error UnknownError, empty ) 
