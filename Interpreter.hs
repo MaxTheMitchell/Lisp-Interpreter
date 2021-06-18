@@ -90,6 +90,7 @@ oneArgFunc ident ex =
             "car" -> car 
             "cdr" -> cdr 
             "null?" -> isNull 
+            "readFile" -> myReadFile
             _ -> applyOneArgAtomFunc ident)
 
 twoArgFunc :: Ident -> Express -> Express -> GlobalFuncs -> IO State 
@@ -105,6 +106,10 @@ display :: Atom -> GlobalFuncs -> IO State
 display err@(Error _) = return . (err,)
 display (Value (List l)) = displayList l 
 display atom = (>>) (putStr $ show atom) . return . (atom,)
+
+myReadFile :: Atom -> GlobalFuncs -> IO State 
+myReadFile (Value (String str)) gf = (, gf) . Value . String <$> readFile str 
+myReadFile _ _ = return (Error TypeError, empty)
 
 displayList :: [Express] -> GlobalFuncs -> IO State
 displayList exs = 
